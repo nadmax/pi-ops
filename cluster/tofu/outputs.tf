@@ -1,13 +1,5 @@
 output "nodes" {
-    description = "All configured nodes"
-
-    value = {
-        for node in var.nodes : node.name => {
-            ip   = node.ip
-            role = node.role
-            user = node.user
-        }
-    }
+    value = local.nodes
 }
 
 output "inventory_files" {
