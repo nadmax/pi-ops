@@ -6,6 +6,9 @@ defaults:
 
 on:
   workflow_call:
+    secrets:
+      SOPS_AGE_KEY:
+        required: true
 
 jobs:
   fmt:
@@ -53,8 +56,6 @@ jobs:
 
       - name: Create execution plan
         run: tofu plan
-        env:
-          SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
 
   apply:
     needs: plan
@@ -72,5 +73,3 @@ jobs:
 
       - name: Apply execution plan
         run: tofu apply -auto-approve
-        env:
-          SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
