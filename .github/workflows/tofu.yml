@@ -1,0 +1,76 @@
+name: OpenTofu
+
+defaults:
+  run:
+    working-directory: cluster/tofu
+
+on:
+  workflow_call:
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Check format
+        run: tofu fmt -check -write=false -diff
+        continue-on-error: false
+
+  validate:
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Init config
+        run: tofu init
+
+      - name: Validate config
+        run: tofu validate
+
+  plan:
+    needs: validate
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Init config
+        run: tofu init
+
+      - name: Create execution plan
+        run: tofu plan
+        env:
+          SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
+
+  apply:
+    needs: plan
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Init config
+        run: tofu init
+
+      - name: Apply execution plan
+        run: tofu apply -auto-approve
+        env:
+          SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
