@@ -6,6 +6,9 @@ defaults:
 
 on:
   workflow_call:
+    secrets:
+      SOPS_AGE_KEY:
+        required: true
 
 jobs:
   fmt:

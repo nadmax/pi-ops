@@ -10,3 +10,5 @@ jobs:
   opentofu:
     name: OpenTofu
     uses: ./.github/workflows/tofu.yml
+    secrets:
+      SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
