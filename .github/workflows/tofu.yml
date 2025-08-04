@@ -6,16 +6,11 @@ defaults:
 
 on:
   workflow_call:
-    inputs:
-      apply_enabled:
-        description: "Whether to run the apply job"
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +25,7 @@ jobs:
   validate:
     needs: fmt
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,6 +42,7 @@ jobs:
   plan:
     needs: validate
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -65,9 +62,8 @@ jobs:
           SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
 
   apply:
-    needs: plan
     runs-on: ubuntu-latest
-    if: ${{ inputs.apply_enabled }}
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
