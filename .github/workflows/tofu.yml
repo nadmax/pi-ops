@@ -6,6 +6,12 @@ defaults:
 
 on:
   workflow_call:
+    inputs:
+      apply_enabled:
+        description: "Whether to run the apply job"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   fmt:
@@ -36,3 +42,46 @@ jobs:
 
       - name: Validate config
         run: tofu validate
+
+  plan:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SOPS
+        uses: nhedger/setup-sops@v2
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Init config
+        run: tofu init
+
+      - name: Plan changes
+        run: tofu plan
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    if: ${{ inputs.apply_enabled }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SOPS
+        uses: nhedger/setup-sops@v2
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Init config
+        run: tofu init
+
+      - name: Apply plan
+        run: tofu apply -auto-approve
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
