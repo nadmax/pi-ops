@@ -8,3 +8,8 @@ jobs:
     name: OpenTofu
     uses: ./.github/workflows/tofu.yml
     secrets: inherit
+
+  ansible:
+    name: Ansible
+    uses: ./.github/workflows/ansible.yml
+    secrets: inherit

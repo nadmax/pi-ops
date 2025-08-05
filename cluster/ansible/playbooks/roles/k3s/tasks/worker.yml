@@ -1,0 +1,34 @@
+---
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Get k3s token from master
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token
+  delegate_to: "{{ groups['masters'][0] }}"
+
+- name: Download k3s installation script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: '0755'
+  when: not k3s_binary.stat.exists
+
+- name: Install k3s on workers
+  ansible.builtin.shell: |
+    set -o pipefail
+    K3S_URL=https://{{ hostvars[groups['masters'][0]]['ansible_host'] }}:6443 \
+    K3S_TOKEN={{ k3s_token.content | b64decode | trim }} \
+    /tmp/k3s-install.sh
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/k3s
+  when: not k3s_binary.stat.exists
+
+- name: Wait for k3s agent to be ready
+  ansible.builtin.wait_for:
+    path: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+    timeout: 300

@@ -9,10 +9,10 @@ all:
           node_role: ${node.role}
 %{ endfor ~}
       children:
-        masters: {}
-        workers: {}
+        master: {}
+        worker: {}
       vars:
-        version: v1.28.4+k3s1
+        version: v1.30.14+k3s2
         token_file: /var/lib/rancher/k3s/server/node-token
         data_dir: /var/lib/rancher/k3s
     
