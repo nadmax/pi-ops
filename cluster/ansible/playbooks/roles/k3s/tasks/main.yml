@@ -1,0 +1,10 @@
+---
+- name: Deploy k3s on master
+  when: "'masters' in group_names"
+  ansible.builtin.import_tasks:
+    master.yml
+
+- name: Deploy k3s on workers
+  when: "'worker' in group_names"
+  ansible.builtin.import_tasks:
+    worker.yml

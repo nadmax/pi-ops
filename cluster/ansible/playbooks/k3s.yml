@@ -1,22 +1,7 @@
-- name: Deploy k3s master
-  hosts: masters
+---
+- name: Deploy k3s
+  hosts: all
+  gather_facts: true
   become: true
-  tasks:
-    - name: Install k3s on master
-      shell: |
-        curl -sfL https://get.k3s.io | sh -s - server
-
-- name: Deploy k3s workers
-  hosts: workers
-  become: true
-  tasks:
-    - name: Get k3s token from master
-      delegate_to: "{{ groups['masters'][0] }}"
-      slurp:
-        src: /var/lib/rancher/k3s/server/node-token
-      register:
-        k3s_token
-
-    - name: Install k3s on workers
-      shell: |
-        curl -sfL https://get.k3s.io | K3S_URL=https://{{ hostvars[groups['masters'][0]]['ansible_host'] }}:6443 K3S_TOKEN={{ k3s_token.content | b64decode | trim }} sh -
+  roles:
+    - k3s

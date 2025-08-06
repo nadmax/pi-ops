@@ -1,0 +1,28 @@
+---
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Download k3s installation script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: '0755'
+  when: not k3s_binary.stat.exists
+
+- name: Install k3s on master
+  ansible.builtin.shell: |
+    set -o pipefail
+    /tmp/k3s-install.sh server
+  args:
+    executable: /bin/bash
+    creates: /usr/local/bin/k3s
+  when: not k3s_binary.stat.exists
+
+- name: Wait for k3s to be ready
+  ansible.builtin.wait_for:
+    port: 6443
+    host: "{{ ansible_host }}"
+    delay: 10
+    timeout: 300

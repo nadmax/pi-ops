@@ -1,0 +1,76 @@
+name: Ansible
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    defaults:
+      run:
+        working-directory: cluster/ansible
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint yamllint
+
+      - name: Lint Ansible playbooks
+        run: |
+          yamllint playbooks/
+          ansible-lint playbooks/
+
+  dry-run:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SOPS
+        uses: nhedger/setup-sops@v2
+
+      - name: Install OpenTofu
+        uses: opentofu/setup-opentofu@v1
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint yamllint
+
+      - name: Install SSH Agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Init config
+        run: tofu -chdir=cluster/tofu init
+
+      - name: Apply plan
+        run: tofu -chdir=cluster/tofu apply -auto-approve
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Dry run playbooks
+        run: |
+          cd cluster/ansible
+          ansible-playbook -i inventory/hosts.yml playbooks/packages.yml --check --diff
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: false
